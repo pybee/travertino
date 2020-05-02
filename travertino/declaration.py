@@ -2,7 +2,10 @@ from .colors import color
 
 
 class Choices:
-    "A class to define allowable data types for a property"
+    """
+    A class to define allowable data types for a property.
+    Note: multiple allowable data types can be included in a Choices instance.
+    """
     def __init__(
             self, *constants, default=False,
             string=False, integer=False, number=False, color=False):
@@ -13,16 +16,10 @@ class Choices:
         self.integer = integer
         self.number = number
         self.color = color
-
-        self._options = sorted(str(c).lower().replace('_', '-') for c in self.constants)
-        if self.string:
-            self._options.append("<string>")
-        if self.integer:
-            self._options.append("<integer>")
-        if self.number:
-            self._options.append("<number>")
-        if self.color:
-            self._options.append("<color>")
+        allowable_types = ('string', 'integer', 'number', 'color')
+        self._types = [t for t in allowable_types if getattr(self, t)]
+        self._options = sorted(
+            str(c).lower().replace('_', '-') for c in self.constants)
 
     def validate(self, value):
         if self.default:
@@ -48,16 +45,16 @@ class Choices:
                 return color(value)
             except ValueError:
                 pass
-        if value == 'none':
-            value = None
         for const in self.constants:
             if value == const:
                 return const
-
+        if value is 'none' and not self.string:
+            raise ValueError("The string 'none' is not a valid initial value")
         raise ValueError("'{0}' is not a valid initial value".format(value))
 
     def __str__(self):
-        return ", ".join(self._options)
+        return ", ".join(
+            self._options + ["<{}>".format(t) for t in self._types])
 
 
 class BaseStyle:
